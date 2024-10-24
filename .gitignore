@@ -1,0 +1,15 @@
+# Visual Studio related directories
+.vs/
+
+# Build directories
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+
+# Auto-generated files
+*.log
+*.lock
+/N4_FileTranferTCPClientServerLAN.sln
