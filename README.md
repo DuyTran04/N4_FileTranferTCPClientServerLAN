@@ -86,5 +86,5 @@ Project được phân phối dưới giấy phép MIT. Xem thêm tại `LICENSE
 - DuyTran04
 
 ## 📧 Liên hệ
-- Email: [your-email@example.com]
+- Email: [2254810246@vaa.edu.vn]
 - GitHub: [@DuyTran04](https://github.com/DuyTran04)
