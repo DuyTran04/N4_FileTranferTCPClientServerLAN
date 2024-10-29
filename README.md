@@ -26,7 +26,7 @@
 - Asynchronous Programming
 
 ## 📋 Yêu cầu hệ thống
-- Windows 7/8/10
+- Windows 7/8/10/11
 - .NET Framework 4.7.2 trở lên
 - Kết nối mạng LAN
 
