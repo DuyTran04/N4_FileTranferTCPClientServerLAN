@@ -72,10 +72,6 @@ git clone https://github.com/DuyTran04/N4_FileTranferTCPClientServerLAN.git
 - Kiểm soát quyền truy cập thư mục
 
 
-
-## ⚖️ Giấy phép
-Project được phân phối dưới giấy phép MIT. Xem thêm tại `LICENSE`.
-
 ## 👥 Tác giả
 - DuyTran04
 
