@@ -71,13 +71,7 @@ git clone https://github.com/DuyTran04/N4_FileTranferTCPClientServerLAN.git
 - Cấu hình firewall phù hợp
 - Kiểm soát quyền truy cập thư mục
 
-## 🤝 Đóng góp
-Mọi đóng góp đều được chào đón:
-1. Fork project
-2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
-3. Commit thay đổi (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Tạo Pull Request
+
 
 ## ⚖️ Giấy phép
 Project được phân phối dưới giấy phép MIT. Xem thêm tại `LICENSE`.
