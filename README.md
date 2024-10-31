@@ -71,10 +71,3 @@ git clone https://github.com/DuyTran04/N4_FileTranferTCPClientServerLAN.git
 - Cấu hình firewall phù hợp
 - Kiểm soát quyền truy cập thư mục
 
-
-## 👥 Tác giả
-- DuyTran04
-
-## 📧 Liên hệ
-- Email: [anhduytd@outlook.com.vn]
-- GitHub: [@DuyTran04](https://github.com/DuyTran04)
