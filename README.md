@@ -5,7 +5,7 @@
 
 ## ✨ Tính năng chính
 - **Server:**
-  - Hiển thị địa chỉ IP của máy
+  - Tự cho địa chỉ IP của máy
   - Cho phép chọn port để lắng nghe
   - Hiển thị danh sách clients kết nối
   - Theo dõi tiến trình nhận file
