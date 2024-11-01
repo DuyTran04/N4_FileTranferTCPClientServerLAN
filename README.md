@@ -7,7 +7,6 @@
 - **Server:**
   - Hiển thị địa chỉ IP của máy
   - Cho phép chọn port để lắng nghe
-  - Tự động tạo thư mục lưu file
   - Hiển thị danh sách clients kết nối
   - Theo dõi tiến trình nhận file
   - Xử lý file trùng tên tự động
