@@ -9,12 +9,10 @@
   - Cho phép chọn port để lắng nghe
   - Hiển thị danh sách clients kết nối
   - Theo dõi tiến trình nhận file
-  - Xử lý file trùng tên tự động
 
 - **Client:**
   - Kết nối tới server thông qua IP và port
-  - Cho phép chọn nhiều file để gửi
-  - Hiển thị tiến trình gửi file
+  - Cho phép chọn nhiều file để gửi (IN PROCESS)
   - Giao diện thân thiện, dễ sử dụng
 
 ## 🛠️ Công nghệ sử dụng
@@ -52,21 +50,3 @@ git clone https://github.com/DuyTran04/N4_FileTranferTCPClientServerLAN.git
 3. Nhập port đã cấu hình trên Server
 4. Click "Connect"
 5. Chọn file và gửi
-
-## 🔧 Xử lý sự cố thường gặp
-1. Không kết nối được:
-   - Kiểm tra IP và port
-   - Đảm bảo Server đang chạy
-   - Kiểm tra firewall
-   - Thử ping giữa các máy
-
-2. Không gửi được file:
-   - Kiểm tra quyền truy cập thư mục
-   - Đảm bảo còn đủ dung lượng
-   - Kiểm tra kết nối mạng
-
-## 🔒 Bảo mật
-- Chỉ sử dụng trong mạng LAN tin cậy
-- Cấu hình firewall phù hợp
-- Kiểm soát quyền truy cập thư mục
-
