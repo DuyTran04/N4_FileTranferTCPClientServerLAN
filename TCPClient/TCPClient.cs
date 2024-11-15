@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,6 +21,10 @@ namespace N4_FileTranferTCPClientServerLAN
         private NetworkStream networkStream;
         private string selectedFilePath;
         private bool isConnected = false;
+        private bool isShowingNetworkError = false;
+        private List<string> selectedFilePaths = new List<string>();
+        private CancellationTokenSource cancellationSource;
+        private System.Windows.Forms.Timer connectionCheckTimer;
 
         public TCPClient()
         {
@@ -35,15 +40,45 @@ namespace N4_FileTranferTCPClientServerLAN
             btnBrowse.Click += BrowseButton_Click;
             btnSendFile.Click += SendFileButton_Click;
             FormClosing += TCPClient_FormClosing;
+            chkLimitFiles.CheckedChanged += ChkLimitFiles_CheckedChanged;
 
             // Thiết lập ban đầu
             disconnectButton.Enabled = false;
             btnSendFile.Enabled = false;
             txtSelectedFile.ReadOnly = true;
+            numericFileLimit.Value = 5; // Mặc định giới hạn 5 file
+
+            // Khởi tạo timer
+            connectionCheckTimer = new System.Windows.Forms.Timer();
+            connectionCheckTimer.Interval = 1000; // Kiểm tra mỗi 1 giây
+            connectionCheckTimer.Tick += ConnectionCheckTimer_Tick;
+        }
+
+        private void ConnectionCheckTimer_Tick(object sender, EventArgs e)
+        {
+            if (isConnected && !NetworkInterface.GetIsNetworkAvailable() && !isShowingNetworkError)
+            {
+                isShowingNetworkError = true; // Đánh dấu đang hiện thông báo
+                connectionCheckTimer.Stop(); // Dừng timer ngay lập tức
+
+                MessageBox.Show("Network connection lost. Disconnecting from server.",
+                    "Network Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                DisconnectFromServer();
+                isShowingNetworkError = false; // Reset lại trạng thái
+            }
         }
 
         private async void ConnectButton_Click(object sender, EventArgs e)
         {
+            // Kiểm tra trước đoạn if(!isConnected)
+            if (!NetworkInterface.GetIsNetworkAvailable())
+            {
+                MessageBox.Show("No network connection available. Please check your network connection.",
+                    "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             if (!isConnected)
             {
                 try
@@ -88,10 +123,13 @@ namespace N4_FileTranferTCPClientServerLAN
                     networkStream = client.GetStream();
                     isConnected = true;
 
+                    // Bắt đầu timer kiểm tra kết nối sau khi connect thành công
+                    connectionCheckTimer.Start();
+
                     // Update UI
                     connectButton.Enabled = false;
                     disconnectButton.Enabled = true;
-                    btnSendFile.Enabled = selectedFilePath != null;
+                    btnSendFile.Enabled = selectedFilePaths.Count > 0;
                     hostTextBox.Enabled = false;
                     portTextBox.Enabled = false;
 
@@ -112,6 +150,11 @@ namespace N4_FileTranferTCPClientServerLAN
             }
         }
 
+        private void NetworkChange_NetworkAvailabilityChanged(object sender, NetworkAvailabilityEventArgs e)
+        {
+            
+        }
+
         private void DisconnectButton_Click(object sender, EventArgs e)
         {
             DisconnectFromServer();
@@ -123,6 +166,9 @@ namespace N4_FileTranferTCPClientServerLAN
             {
                 if (isConnected)
                 {
+                    // Dừng timer kiểm tra kết nối
+                    connectionCheckTimer.Stop();
+                    isShowingNetworkError = false; // Reset trạng thái
                     networkStream?.Close();
                     client?.Close();
 
@@ -133,6 +179,10 @@ namespace N4_FileTranferTCPClientServerLAN
                     hostTextBox.Enabled = true;
                     portTextBox.Enabled = true;
                     statusBar1.Text = "Disconnected from server";
+
+                    // Clear selected files when disconnecting
+                    selectedFilePaths.Clear();
+                    txtSelectedFile.Text = "";
                 }
             }
             catch (Exception ex)
@@ -142,18 +192,41 @@ namespace N4_FileTranferTCPClientServerLAN
             }
         }
 
+        private void ChkLimitFiles_CheckedChanged(object sender, EventArgs e)
+        {
+            numericFileLimit.Enabled = chkLimitFiles.Checked;
+        }
         private void BrowseButton_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.Filter = "All Files (*.*)|*.*";
                 openFileDialog.FilterIndex = 1;
+                openFileDialog.Multiselect = true;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    selectedFilePath = openFileDialog.FileName;
-                    txtSelectedFile.Text = selectedFilePath;
-                    btnSendFile.Enabled = isConnected;
+                    // Kiểm tra giới hạn số lượng file nếu checkbox được bật
+                    if (chkLimitFiles.Checked && openFileDialog.FileNames.Length > numericFileLimit.Value)
+                    {
+                        MessageBox.Show($"Chỉ được chọn tối đa {numericFileLimit.Value} file một lần.",
+                            "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    selectedFilePaths.Clear();
+                    selectedFilePaths.AddRange(openFileDialog.FileNames);
+
+                    if (selectedFilePaths.Count == 1)
+                    {
+                        txtSelectedFile.Text = Path.GetFileName(selectedFilePaths[0]);
+                    }
+                    else
+                    {
+                        txtSelectedFile.Text = $"Đã chọn {selectedFilePaths.Count} files";
+                    }
+
+                    btnSendFile.Enabled = isConnected && selectedFilePaths.Count > 0;
                 }
             }
         }
@@ -167,10 +240,18 @@ namespace N4_FileTranferTCPClientServerLAN
                 return;
             }
 
-            if (string.IsNullOrEmpty(selectedFilePath))
+            if (selectedFilePaths.Count == 0)
             {
                 MessageBox.Show("Please select a file first.", "No File Selected",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Thêm kiểm tra số lượng file trước khi gửi
+            if (chkLimitFiles.Checked && selectedFilePaths.Count > numericFileLimit.Value)
+            {
+                MessageBox.Show($"Chỉ được gửi tối đa {numericFileLimit.Value} file một lần.",
+                    "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -178,61 +259,93 @@ namespace N4_FileTranferTCPClientServerLAN
             {
                 btnSendFile.Enabled = false;
                 btnBrowse.Enabled = false;
-                await SendFileAsync(selectedFilePath);
-                btnSendFile.Enabled = true;
-                btnBrowse.Enabled = true;
+                cancellationSource = new CancellationTokenSource();
+
+                // Gửi các file đã chọn
+                foreach (string filePath in selectedFilePaths)
+                {
+                    try
+                    {
+                        await SendFileAsync(filePath, cancellationSource.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error sending file {Path.GetFileName(filePath)}: {ex.Message}");
+                    }
+                }
+
+                selectedFilePaths.Clear();
+                txtSelectedFile.Text = "";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error sending file: {ex.Message}", "Error",
+                MessageBox.Show($"Error in file transfer: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                DisconnectFromServer();
+            }
+            finally
+            {
                 btnSendFile.Enabled = true;
                 btnBrowse.Enabled = true;
-                DisconnectFromServer();
+                cancellationSource?.Dispose();
             }
         }
 
-        private async Task SendFileAsync(string filePath)
+        private async Task SendFileAsync(string filePath, CancellationToken cancellationToken)
         {
-            using (FileStream fileStream = File.OpenRead(filePath))
+            const int bufferSize = 81920;
+
+            using (TcpClient fileClient = new TcpClient())
             {
-                string fileName = Path.GetFileName(filePath);
-                var fileItem = AddFileToListView(fileName, fileStream.Length);
-
-                try
+                await fileClient.ConnectAsync(hostTextBox.Text, int.Parse(portTextBox.Text));
+                using (NetworkStream fileStream = fileClient.GetStream())
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize))
                 {
-                    // Gửi tên file
-                    byte[] fileNameBytes = Encoding.UTF8.GetBytes(fileName);
-                    byte[] fileNameLengthBytes = BitConverter.GetBytes(fileNameBytes.Length);
-                    await networkStream.WriteAsync(fileNameLengthBytes, 0, 4);
-                    await networkStream.WriteAsync(fileNameBytes, 0, fileNameBytes.Length);
+                    string fileName = Path.GetFileName(filePath);
+                    var fileItem = AddFileToListView(fileName, fs.Length);
+                    UpdateFileStatus(fileItem, "Sending"); // Thêm trạng thái sending
 
-                    // Gửi kích thước file
-                    byte[] fileSizeBytes = BitConverter.GetBytes(fileStream.Length);
-                    await networkStream.WriteAsync(fileSizeBytes, 0, 8);
-
-                    // Gửi nội dung file
-                    byte[] buffer = new byte[8192];
-                    long totalBytes = 0;
-                    int bytesRead;
-
-                    while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    try
                     {
-                        await networkStream.WriteAsync(buffer, 0, bytesRead);
-                        totalBytes += bytesRead;
+                        // Gửi tên file
+                        byte[] fileNameBytes = Encoding.UTF8.GetBytes(fileName);
+                        byte[] fileNameLengthBytes = BitConverter.GetBytes(fileNameBytes.Length);
+                        await fileStream.WriteAsync(fileNameLengthBytes, 0, 4, cancellationToken);
+                        await fileStream.WriteAsync(fileNameBytes, 0, fileNameBytes.Length, cancellationToken);
 
-                        // Cập nhật progress
-                        int percentage = (int)((totalBytes * 100) / fileStream.Length);
-                        UpdateFileProgress(fileItem, percentage, totalBytes, fileStream.Length);
+                        // Gửi kích thước file
+                        byte[] fileSizeBytes = BitConverter.GetBytes(fs.Length);
+                        await fileStream.WriteAsync(fileSizeBytes, 0, 8, cancellationToken);
+
+                        byte[] buffer = new byte[bufferSize];
+                        long totalBytes = 0;
+                        int bytesRead;
+                        DateTime lastUIUpdate = DateTime.Now;
+
+                        while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                        {
+                            await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                            totalBytes += bytesRead;
+
+                            if ((DateTime.Now - lastUIUpdate).TotalMilliseconds >= 100)
+                            {
+                                int percentage = (int)((totalBytes * 100) / fs.Length);
+                                UpdateFileProgress(fileItem, percentage, totalBytes, fs.Length);
+                                lastUIUpdate = DateTime.Now;
+                            }
+                        }
+
+                        // Đợi một chút để đảm bảo server nhận được toàn bộ dữ liệu
+                        await Task.Delay(500, cancellationToken);
+
+                        UpdateFileProgress(fileItem, 100, fs.Length, fs.Length);
+                        UpdateFileStatus(fileItem, "Completed");
                     }
-
-                    UpdateFileStatus(fileItem, "Completed");
-                    statusBar1.Text = $"File {fileName} sent successfully";
-                }
-                catch (Exception)
-                {
-                    UpdateFileStatus(fileItem, "Failed");
-                    throw;
+                    catch (Exception)
+                    {
+                        UpdateFileStatus(fileItem, "Failed");
+                        throw;
+                    }
                 }
             }
         }
@@ -247,7 +360,7 @@ namespace N4_FileTranferTCPClientServerLAN
 
             var item = new ListViewItem(fileName);
             item.SubItems.Add(FormatFileSize(fileSize));
-            item.SubItems.Add("Sending");
+            item.SubItems.Add("Sending"); //Trạng thái đang gửi
             item.SubItems.Add("0%");
             fileListView.Items.Add(item);
             return item;
@@ -275,7 +388,6 @@ namespace N4_FileTranferTCPClientServerLAN
             }
 
             item.SubItems[2].Text = status;
-            progressBar.Value = status == "Completed" ? 0 : progressBar.Value;
         }
 
         private string FormatFileSize(long bytes)

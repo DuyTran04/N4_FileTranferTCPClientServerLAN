@@ -1,4 +1,6 @@
-﻿namespace N4_FileTranferTCPClientServerLAN
+﻿using System;
+
+namespace N4_FileTranferTCPClientServerLAN
 {
     partial class TCPClient
     {
@@ -29,6 +31,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            this.chkLimitFiles = new System.Windows.Forms.CheckBox();
+            this.numericFileLimit = new System.Windows.Forms.NumericUpDown();
             this.connectButton = new System.Windows.Forms.Button();
             this.disconnectButton = new System.Windows.Forms.Button();
             this.statusBar1 = new System.Windows.Forms.StatusBar();
@@ -86,6 +90,8 @@
             this.groupBox1.Controls.Add(this.label2);
             this.groupBox1.Controls.Add(this.hostTextBox);
             this.groupBox1.Controls.Add(this.portTextBox);
+            this.groupBox1.Controls.Add(this.chkLimitFiles);
+            this.groupBox1.Controls.Add(this.numericFileLimit);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(196, 94);
@@ -255,6 +261,29 @@
             this.groupBoxFileTransfer.PerformLayout();
             this.ResumeLayout(false);
 
+            // Checkbox
+            this.chkLimitFiles.AutoSize = true;
+            this.chkLimitFiles.Checked = true; // Mặc định bật giới hạn
+            this.chkLimitFiles.Location = new System.Drawing.Point(6, 80);
+            this.chkLimitFiles.Name = "chkLimitFiles";
+            this.chkLimitFiles.Size = new System.Drawing.Size(90, 17);
+            this.chkLimitFiles.TabIndex = 4;
+            this.chkLimitFiles.Text = "Giới hạn file:";
+            this.toolTip.SetToolTip(this.chkLimitFiles, "Bật/tắt giới hạn số lượng file");
+
+            // NumericUpDown
+            this.numericFileLimit.Location = new System.Drawing.Point(102, 78);
+            this.numericFileLimit.Name = "numericFileLimit";
+            this.numericFileLimit.Size = new System.Drawing.Size(60, 20);
+            this.numericFileLimit.TabIndex = 5;
+            this.numericFileLimit.Minimum = 1;
+            this.numericFileLimit.Maximum = 100;
+            this.numericFileLimit.Value = 5;
+            this.numericFileLimit.Enabled = true; // Mặc định cho phép nhập số
+
+            // Thêm event cho checkbox để enable/disable NumericUpDown
+            this.chkLimitFiles.CheckedChanged += new System.EventHandler(this.chkLimitFiles_CheckedChanged);
+
         }
 
         #endregion
@@ -279,5 +308,13 @@
         private System.Windows.Forms.Button btnSendFile;
         private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.ToolTip toolTip;
+        private System.Windows.Forms.CheckBox chkLimitFiles;
+        private System.Windows.Forms.NumericUpDown numericFileLimit;
+
+        // Event handler để bật/tắt NumericUpDown khi checkbox thay đổi
+        private void chkLimitFiles_CheckedChanged(object sender, EventArgs e)
+        {
+            numericFileLimit.Enabled = chkLimitFiles.Checked;
+        }
     }
 }
