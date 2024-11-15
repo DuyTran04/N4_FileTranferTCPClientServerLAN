@@ -12,7 +12,7 @@
 
 - **Client:**
   - Kết nối tới server thông qua IP và port
-  - Cho phép chọn nhiều file để gửi (IN PROCESS)
+  - Cho phép chọn nhiều file để gửi
   - Giao diện thân thiện, dễ sử dụng
 
 ## 🛠️ Công nghệ sử dụng
@@ -40,7 +40,7 @@ git clone https://github.com/DuyTran04/N4_FileTranferTCPClientServerLAN.git
 ### Khởi động Server:
 1. Chạy ứng dụng TCPServer
 2. Nhập port muốn sử dụng (ví dụ: 8083)
-3. Chọn thư mục lưu file (hoặc sử dụng thư mục mặc định)
+3. Chọn đường dẫn lưu file (Trong code TCPServer.cs để mặc định là C:\Users\Admin\Documents\ReceivedFiles)
 4. Click "Start Server"
 5. Ghi nhớ địa chỉ IP hiển thị
 
