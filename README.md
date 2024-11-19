@@ -12,7 +12,7 @@
 
 - **Client:**
   - Kết nối tới server thông qua IP và port
-  - Cho phép chọn nhiều file để gửi
+  - Cho phép chọn giới hạn và không giới file trước khi gửi cho Server
   - Giao diện thân thiện, dễ sử dụng
 
 ## 🛠️ Công nghệ sử dụng
@@ -50,3 +50,8 @@ git clone https://github.com/DuyTran04/N4_FileTranferTCPClientServerLAN.git
 3. Nhập port đã cấu hình trên Server
 4. Click "Connect"
 5. Chọn file và gửi
+
+### Chức năng nâng cao thêm: (Hiện tại dự kiến)
+1. Mật khẩu giữa Client và Server trước khi kết nối
+2. End-to-end encryption (E2EE) ????
+   
