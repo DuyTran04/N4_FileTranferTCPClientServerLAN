@@ -74,6 +74,7 @@ namespace N4_FileTranferTCPClientServerLAN
             buttonBrowse.Click += ButtonBrowse_Click;
             FormClosing += TCPServer_FormClosing;
 
+
             //Dừng time 
             networkCheckTimer = new System.Windows.Forms.Timer();
             networkCheckTimer.Interval = 1000;
@@ -303,7 +304,6 @@ namespace N4_FileTranferTCPClientServerLAN
             {
                 await maxConcurrentTransfers.WaitAsync(); // Đợi cho đến khi có slot trống
 
-
                 string clientInfo = $"{((IPEndPoint)client.Client.RemoteEndPoint).Address}:" +
                                   $"{((IPEndPoint)client.Client.RemoteEndPoint).Port}";
 
@@ -312,25 +312,66 @@ namespace N4_FileTranferTCPClientServerLAN
 
                 using (NetworkStream stream = client.GetStream())
                 {
-                    // Đọc tên file
-                    byte[] fileNameLengthBytes = new byte[4];
-                    await stream.ReadAsync(fileNameLengthBytes, 0, 4);
-                    int fileNameLength = BitConverter.ToInt32(fileNameLengthBytes, 0);
+                    byte[] buffer = new byte[4];
+                    while (client.Connected)
+                    {
+                        // Đọc độ dài của thông điệp
+                        int bytesRead = await stream.ReadAsync(buffer, 0, 4);
+                        if (bytesRead < 4) break;
 
-                    byte[] fileNameBytes = new byte[fileNameLength];
-                    await stream.ReadAsync(fileNameBytes, 0, fileNameLength);
-                    string fileName = Encoding.UTF8.GetString(fileNameBytes);
+                        int messageLength = BitConverter.ToInt32(buffer, 0);
+                        byte[] messageBuffer = new byte[messageLength];
+                        bytesRead = await stream.ReadAsync(messageBuffer, 0, messageLength);
 
-                    // Đọc kích thước file
-                    byte[] fileSizeBytes = new byte[8];
-                    await stream.ReadAsync(fileSizeBytes, 0, 8);
-                    long fileSize = BitConverter.ToInt64(fileSizeBytes, 0);
+                        if (bytesRead == 0) break;
 
-                    // Tạo item trong ListView
-                    var fileItem = AddFileToListView(fileName, fileSize);
+                        string message = Encoding.UTF8.GetString(messageBuffer);
 
-                    // Nhận file
-                    await ReceiveFileAsync(stream, fileName, fileSize, fileItem, client);
+                        // Kiểm tra nếu là thông báo ngắt kết nối
+                        if (message == "DISCONNECT")
+                        {
+                            string clientIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString();
+                            foreach (ListViewItem item in listViewClients.Items)
+                            {
+                                if (item.Text == clientIp)
+                                {
+                                    if (listViewClients.InvokeRequired)
+                                    {
+                                        listViewClients.Invoke(new Action(() =>
+                                        {
+                                            item.SubItems[2].Text = "Đã ngắt kết nối";
+                                            item.SubItems[3].Text = DateTime.Now.ToString("HH:mm:ss");
+                                        }));
+                                    }
+                                    else
+                                    {
+                                        item.SubItems[2].Text = "Đã ngắt kết nối";
+                                        item.SubItems[3].Text = DateTime.Now.ToString("HH:mm:ss");
+                                        // Cập nhật statusBar khi client ngắt kết nối
+                                        statusBar.Text = $"Client disconnected: {clientIp}";
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            // Xử lý nhận file như cũ
+                            string fileName = message;
+
+                            // Đọc kích thước file
+                            byte[] fileSizeBytes = new byte[8];
+                            await stream.ReadAsync(fileSizeBytes, 0, 8);
+                            long fileSize = BitConverter.ToInt64(fileSizeBytes, 0);
+
+                            // Tạo item trong ListView
+                            var fileItem = AddFileToListView(fileName, fileSize);
+
+                            // Nhận file
+                            await ReceiveFileAsync(stream, fileName, fileSize, fileItem, client);
+                        }
+                    }
                 }
             }
             catch (Exception ex) when (!cancellationToken.Token.IsCancellationRequested)
@@ -583,37 +624,34 @@ namespace N4_FileTranferTCPClientServerLAN
                     return;
                 }
 
-                string clientIp = ((IPEndPoint)client.Client.RemoteEndPoint)?.Address.ToString();
+                // Lưu thông tin client trước khi socket bị đóng
+                string clientIp = "";
+                try
+                {
+                    if (client?.Client?.Connected == true && client?.Client?.RemoteEndPoint != null)
+                    {
+                        clientIp = ((IPEndPoint)client.Client.RemoteEndPoint)?.Address.ToString();
+                    }
+                }
+                catch { } // Bỏ qua lỗi nếu không lấy được IP
+
                 string disconnectTime = DateTime.Now.ToString("HH:mm:ss");
 
                 foreach (ListViewItem item in listViewClients.Items)
                 {
                     if (item.Text == clientIp)
                     {
-                        // Cập nhật trạng thái ngắt kết nối
                         item.SubItems[2].Text = "Đã ngắt kết nối";
-                        item.SubItems[3].Text = disconnectTime; // Cập nhật thời gian ngắt kết nối
-
-                        // Cập nhật status bar
+                        item.SubItems[3].Text = disconnectTime;
                         statusBar.Text = $"Client {clientIp} disconnected at {disconnectTime}";
                         break;
                     }
                 }
             }
-            catch (ObjectDisposedException)
-            {
-                // Xử lý khi socket đã bị dispose
-                string disconnectTime = DateTime.Now.ToString("HH:mm:ss");
-                foreach (ListViewItem item in listViewClients.Items)
-                {
-                    item.SubItems[2].Text = "Đã ngắt kết nối";
-                    item.SubItems[3].Text = disconnectTime;
-                }
-                statusBar.Text = "Client connection lost at " + disconnectTime;
-            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error handling client disconnect: {ex.Message}");
+                // Log lỗi nhưng không hiển thị message box
+                Console.WriteLine($"Error handling client disconnect: {ex.Message}");
             }
         }
 

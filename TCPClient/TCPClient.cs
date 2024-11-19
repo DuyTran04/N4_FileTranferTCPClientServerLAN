@@ -158,6 +158,7 @@ namespace N4_FileTranferTCPClientServerLAN
         private void DisconnectButton_Click(object sender, EventArgs e)
         {
             DisconnectFromServer();
+            progressBar.Value = 0; // Reset progress bar
         }
 
         private void DisconnectFromServer()
@@ -166,9 +167,25 @@ namespace N4_FileTranferTCPClientServerLAN
             {
                 if (isConnected)
                 {
+
+                    // Gửi thông báo ngắt kết nối đến server trước khi đóng kết nối
+                    if (networkStream != null && client != null && client.Connected)
+                    {
+                        byte[] disconnectMsg = Encoding.UTF8.GetBytes("DISCONNECT");
+                        byte[] msgLength = BitConverter.GetBytes(disconnectMsg.Length);
+                        networkStream.Write(msgLength, 0, 4);
+                        networkStream.Write(disconnectMsg, 0, disconnectMsg.Length);
+                        networkStream.Flush();
+
+                        // Đợi một chút để đảm bảo server nhận được thông báo
+                        Thread.Sleep(100);
+                    }
+
                     // Dừng timer kiểm tra kết nối
                     connectionCheckTimer.Stop();
                     isShowingNetworkError = false; // Reset trạng thái
+
+                    // Đóng kết nối
                     networkStream?.Close();
                     client?.Close();
 
@@ -261,6 +278,9 @@ namespace N4_FileTranferTCPClientServerLAN
                 btnBrowse.Enabled = false;
                 cancellationSource = new CancellationTokenSource();
 
+                int successCount = 0;
+                List<string> failedFiles = new List<string>();
+
                 // Gửi các file đã chọn
                 foreach (string filePath in selectedFilePaths)
                 {
@@ -273,6 +293,9 @@ namespace N4_FileTranferTCPClientServerLAN
                         MessageBox.Show($"Error sending file {Path.GetFileName(filePath)}: {ex.Message}");
                     }
                 }
+                // Hiện thông báo sau khi gửi xong tất cả file
+                MessageBox.Show($"Successfully sent {selectedFilePaths.Count} files!",
+                    "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 selectedFilePaths.Clear();
                 txtSelectedFile.Text = "";
@@ -340,6 +363,7 @@ namespace N4_FileTranferTCPClientServerLAN
 
                         UpdateFileProgress(fileItem, 100, fs.Length, fs.Length);
                         UpdateFileStatus(fileItem, "Completed");
+
                     }
                     catch (Exception)
                     {
@@ -388,6 +412,11 @@ namespace N4_FileTranferTCPClientServerLAN
             }
 
             item.SubItems[2].Text = status;
+            if (status == "Completed")
+            {
+                progressBar.Value = 0;  // Reset progress bar
+                txtSelectedFile.Text = ""; // Reset label 
+            }
         }
 
         private string FormatFileSize(long bytes)
