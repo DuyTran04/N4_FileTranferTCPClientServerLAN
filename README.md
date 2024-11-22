@@ -51,7 +51,4 @@ git clone https://github.com/DuyTran04/N4_FileTranferTCPClientServerLAN.git
 4. Click "Connect"
 5. Chọn file và gửi
 
-### Chức năng nâng cao thêm: (Hiện tại dự kiến)
-1. Mật khẩu giữa Client và Server trước khi kết nối
-2. End-to-end encryption (E2EE) ????
    
